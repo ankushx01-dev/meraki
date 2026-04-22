@@ -1,0 +1,46 @@
+<svg width="420" height="420" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Grid Rings -->
+  <g stroke="#1f2937" stroke-width="0.8" fill="none">
+    <circle cx="100" cy="100" r="20"/>
+    <circle cx="100" cy="100" r="40"/>
+    <circle cx="100" cy="100" r="60"/>
+    <circle cx="100" cy="100" r="80"/>
+  </g>
+
+  <!-- Axis Lines -->
+  <g stroke="#374151" stroke-width="0.8">
+    <line x1="100" y1="100" x2="100" y2="20"/>
+    <line x1="100" y1="100" x2="160" y2="60"/>
+    <line x1="100" y1="100" x2="140" y2="160"/>
+    <line x1="100" y1="100" x2="60" y2="160"/>
+    <line x1="100" y1="100" x2="40" y2="60"/>
+  </g>
+
+  <!-- Data Polygon -->
+  <polygon 
+    points="100,40 145,70 130,150 75,135 60,70"
+    fill="#22c55e33"
+    stroke="#22c55e"
+    stroke-width="2"
+  />
+
+  <!-- Data Points -->
+  <g fill="#22c55e">
+    <circle cx="100" cy="40" r="3"/>
+    <circle cx="145" cy="70" r="3"/>
+    <circle cx="130" cy="150" r="3"/>
+    <circle cx="75" cy="135" r="3"/>
+    <circle cx="60" cy="70" r="3"/>
+  </g>
+
+  <!-- Labels + Values -->
+  <g fill="#9ca3af" font-size="10" text-anchor="middle">
+    <text x="100" y="10">Chest 90%</text>
+    <text x="175" y="65">Back 75%</text>
+    <text x="145" y="185">Legs 80%</text>
+    <text x="55" y="185">Shoulders 65%</text>
+    <text x="25" y="65">Arms 70%</text>
+  </g>
+
+</svg>
