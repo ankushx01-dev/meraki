@@ -21,19 +21,22 @@ function hasMeaningfulWorkoutEntry(
     }>;
   }>,
 ) {
-  return exercises.some((exercise) =>
-    Array.isArray(exercise?.sets) &&
-    exercise.sets.some((set) => {
-      if (!set || typeof set !== "object") {
-        return false;
-      }
+  return exercises.some(
+    (exercise) =>
+      Array.isArray(exercise?.sets) &&
+      exercise.sets.some((set) => {
+        if (!set || typeof set !== "object") {
+          return false;
+        }
 
-      if (set.completed || set.isCompleted || set.pr || set.isPR) {
-        return true;
-      }
+        if (set.completed || set.isCompleted || set.pr || set.isPR) {
+          return true;
+        }
 
-      return toPositiveNumber(set.weight) > 0 || toPositiveNumber(set.reps) > 0;
-    }),
+        return (
+          toPositiveNumber(set.weight) > 0 || toPositiveNumber(set.reps) > 0
+        );
+      }),
   );
 }
 
@@ -43,14 +46,18 @@ export async function GET(req: Request) {
     const userId = String(searchParams.get("userId") ?? "");
     const dateKey = String(searchParams.get("dateKey") ?? "");
     if (!userId || !dateKey) {
-      return NextResponse.json({ message: "Missing userId/dateKey" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing userId/dateKey" },
+        { status: 400 },
+      );
     }
 
     await connectDB();
     const doc = await WorkoutSession.findOne({ userId, dateKey }).lean();
     return NextResponse.json({ data: doc ?? null });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error fetching session";
+    const message =
+      error instanceof Error ? error.message : "Error fetching session";
     return NextResponse.json({ message }, { status: 500 });
   }
 }
@@ -62,14 +69,17 @@ export async function PUT(req: Request) {
     const dateKey = String(body?.dateKey ?? "");
     const exercises = Array.isArray(body?.exercises) ? body.exercises : [];
     if (!userId || !dateKey) {
-      return NextResponse.json({ message: "Missing userId/dateKey" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing userId/dateKey" },
+        { status: 400 },
+      );
     }
 
     await connectDB();
     const updated = await WorkoutSession.findOneAndUpdate(
       { userId, dateKey },
       { $set: { userId, dateKey, exercises } },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     ).lean();
 
     const hasCompletedWorkout = hasMeaningfulWorkoutEntry(exercises);
@@ -81,20 +91,26 @@ export async function PUT(req: Request) {
     if (existingCalendar || hasCompletedWorkout) {
       const defaults = getWorkoutDayDefaults(dateKey);
       const resolvedWorkout =
-        typeof existingCalendar?.workout === "string" && existingCalendar.workout.trim()
+        typeof existingCalendar?.workout === "string" &&
+        existingCalendar.workout.trim()
           ? existingCalendar.workout.trim()
           : defaults.workout;
       const resolvedFocus =
-        typeof existingCalendar?.focus === "string" && existingCalendar.focus.trim()
+        typeof existingCalendar?.focus === "string" &&
+        existingCalendar.focus.trim()
           ? existingCalendar.focus.trim()
           : defaults.focus;
       const resolvedSummary =
-        typeof existingCalendar?.summary === "string" && existingCalendar.summary.trim()
+        typeof existingCalendar?.summary === "string" &&
+        existingCalendar.summary.trim()
           ? existingCalendar.summary.trim()
           : defaults.summary;
       const resolvedExercises =
-        Array.isArray(existingCalendar?.exercises) && existingCalendar.exercises.length > 0
-          ? existingCalendar.exercises.map((exercise) => String(exercise))
+        Array.isArray(existingCalendar?.exercises) &&
+        existingCalendar.exercises.length > 0
+          ? existingCalendar.exercises.map((exercise: string) =>
+              String(exercise),
+            )
           : defaults.exercises;
 
       await WorkoutCalendar.findOneAndUpdate(
@@ -108,7 +124,9 @@ export async function PUT(req: Request) {
             summary: resolvedSummary,
             exercises: resolvedExercises,
             completed: hasCompletedWorkout,
-            completedAt: hasCompletedWorkout ? existingCalendar?.completedAt ?? new Date() : null,
+            completedAt: hasCompletedWorkout
+              ? (existingCalendar?.completedAt ?? new Date())
+              : null,
           },
         },
         { upsert: true, new: true },
@@ -117,7 +135,8 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({ message: "Saved", data: updated });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error saving session";
+    const message =
+      error instanceof Error ? error.message : "Error saving session";
     return NextResponse.json({ message }, { status: 500 });
   }
 }

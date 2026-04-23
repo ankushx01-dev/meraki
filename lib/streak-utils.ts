@@ -24,7 +24,9 @@ export function dateKeyFromValue(value: string | Date) {
   return workoutDateKey(normalizeStreakDate(value));
 }
 
-export function createCompletionEntry(value: string | Date): StreakCompletionEntry {
+export function createCompletionEntry(
+  value: string | Date,
+): StreakCompletionEntry {
   return {
     date: normalizeStreakDate(value).toISOString(),
     completed: true,
@@ -75,7 +77,9 @@ export function setCompletionForDate(
   completed: boolean,
 ) {
   const targetKey = dateKeyFromValue(value);
-  const byDateKey = new Map(entries.map((entry) => [dateKeyFromValue(entry.date), entry]));
+  const byDateKey = new Map(
+    entries.map((entry) => [dateKeyFromValue(entry.date), entry]),
+  );
 
   if (completed) {
     byDateKey.set(targetKey, createCompletionEntry(value));
@@ -88,8 +92,13 @@ export function setCompletionForDate(
     .map(([, entry]) => entry);
 }
 
-export function getStreak(entries: StreakCompletionEntry[], referenceDate = new Date()) {
-  const completedSet = new Set(entries.map((entry) => dateKeyFromValue(entry.date)));
+export function getStreak(
+  entries: StreakCompletionEntry[],
+  referenceDate = new Date(),
+) {
+  const completedSet = new Set(
+    entries.map((entry) => dateKeyFromValue(entry.date)),
+  );
   const today = normalizeStreakDate(referenceDate);
   const todayKey = workoutDateKey(today);
   const yesterday = normalizeStreakDate(new Date(today));
@@ -112,17 +121,30 @@ export function getStreak(entries: StreakCompletionEntry[], referenceDate = new 
   return streak;
 }
 
-export function getWeeklyCompletion(entries: StreakCompletionEntry[], referenceDate = new Date()) {
-  const completedSet = new Set(entries.map((entry) => dateKeyFromValue(entry.date)));
+export function getWeeklyCompletion(
+  entries: StreakCompletionEntry[],
+  referenceDate = new Date(),
+): number {   
+  
+  const completedSet = new Set(
+    entries.map((entry) => dateKeyFromValue(entry.date)),
+  );
   const weekStart = startOfWorkoutWeek(normalizeStreakDate(referenceDate));
 
-  return Array.from({ length: 7 }).reduce((count, _, index) => {
+  return Array.from({ length: 7 }).reduce(
+  (count: number, _, index) => {
     const cursor = normalizeStreakDate(new Date(weekStart));
     cursor.setDate(weekStart.getDate() + index);
     return count + (completedSet.has(workoutDateKey(cursor)) ? 1 : 0);
-  }, 0);
-}
+  },
+  0
+);
 
-export function isTodayCompleted(entries: StreakCompletionEntry[], referenceDate = new Date()) {
-  return entries.some((entry) => dateKeyFromValue(entry.date) === dateKeyFromValue(referenceDate));
+export function isTodayCompleted(
+  entries: StreakCompletionEntry[],
+  referenceDate = new Date(),
+) {
+  return entries.some(
+    (entry) => dateKeyFromValue(entry.date) === dateKeyFromValue(referenceDate),
+  );
 }
