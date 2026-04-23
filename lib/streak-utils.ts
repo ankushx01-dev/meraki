@@ -139,7 +139,7 @@ export function getWeeklyCompletion(
   },
   0
 );
-
+}
 export function isTodayCompleted(
   entries: StreakCompletionEntry[],
   referenceDate = new Date(),
