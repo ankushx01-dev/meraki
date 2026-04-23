@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DashboardOnboardingGuard } from "@/components/auth/dashboard-onboarding-guard";
 import { DashboardAppShell } from "@/components/dashboard/app-shell";
+import { StreakProvider } from "@/components/providers/streak-provider";
 import { WorkoutHistoryProvider } from "@/components/providers/workout-history-provider";
 
 export const metadata: Metadata = {
@@ -17,10 +18,12 @@ export default function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <DashboardAppShell>
-      <WorkoutHistoryProvider>
-        <DashboardOnboardingGuard>{children}</DashboardOnboardingGuard>
-      </WorkoutHistoryProvider>
-    </DashboardAppShell>
+    <StreakProvider>
+      <DashboardAppShell>
+        <WorkoutHistoryProvider>
+          <DashboardOnboardingGuard>{children}</DashboardOnboardingGuard>
+        </WorkoutHistoryProvider>
+      </DashboardAppShell>
+    </StreakProvider>
   );
 }

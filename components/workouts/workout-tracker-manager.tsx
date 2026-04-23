@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PlusIcon, SaveIcon, TrashIcon } from "@/components/dashboard/icons";
 import { PageIntro, Panel, cx } from "@/components/dashboard/ui";
 import { useWorkoutHistory } from "@/components/providers/workout-history-provider";
+import { useStreak } from "@/lib/fitness-activity";
 import type { WorkoutExerciseInput } from "@/lib/workout-history";
 
 const storageKey = "meraki-workout-tracker";
@@ -48,18 +49,12 @@ const defaultExercises: WorkoutExercise[] = [
   {
     id: "bench-press",
     name: "Bench Press",
-    sets: [
-      { id: "bench-1", weight: "82.5", reps: "8", isPR: false, isCompleted: true },
-      { id: "bench-2", weight: "85", reps: "6", isPR: false, isCompleted: true },
-    ],
+    sets: [{ id: "bench-1", weight: "", reps: "", isPR: false, isCompleted: false }],
   },
   {
     id: "squats",
     name: "Squats",
-    sets: [
-      { id: "squat-1", weight: "100", reps: "8", isPR: false, isCompleted: true },
-      { id: "squat-2", weight: "105", reps: "6", isPR: false, isCompleted: true },
-    ],
+    sets: [{ id: "squat-1", weight: "", reps: "", isPR: false, isCompleted: false }],
   },
 ];
 
@@ -151,6 +146,18 @@ function normalizeIncomingExercises(value: unknown) {
     .filter((exercise): exercise is WorkoutExercise => Boolean(exercise));
 }
 
+function hasMeaningfulWorkoutDraft(exercises: WorkoutExercise[]) {
+  return exercises.some((exercise) =>
+    exercise.sets.some(
+      (set) =>
+        toPositiveNumber(set.weight) > 0 ||
+        toPositiveNumber(set.reps) > 0 ||
+        set.isPR ||
+        set.isCompleted,
+    ),
+  );
+}
+
 function loadWorkoutState() {
   if (typeof window === "undefined") {
     return defaultExercises;
@@ -164,7 +171,7 @@ function loadWorkoutState() {
   try {
     const parsed = JSON.parse(saved) as StoredWorkoutState;
     const normalized = normalizeIncomingExercises(parsed.exercises);
-    if (normalized.length > 0) {
+    if (parsed.dateKey === todayKey() && hasMeaningfulWorkoutDraft(normalized)) {
       return normalized;
     }
   } catch {
@@ -214,42 +221,42 @@ export function WorkoutTrackerManager() {
   );
   const userId =
     typeof window !== "undefined" ? window.localStorage.getItem("meraki_auth") || "" : "";
-  const [hydratedFromDb, setHydratedFromDb] = useState(false);
   const { monthlySnapshot, saveWorkoutSession } = useWorkoutHistory();
+  const { syncWorkoutSession } = useStreak();
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        exercises,
-        dateKey: todayKey(),
-      }),
-    );
-  }, [exercises]);
-
-  useEffect(() => {
-    if (!userId || !hydratedFromDb) {
+    if (hasMeaningfulWorkoutDraft(exercises)) {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          exercises,
+          dateKey: todayKey(),
+        }),
+      );
       return;
     }
 
-    const timer = window.setTimeout(async () => {
-      await fetch("/api/workout-session", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          dateKey: todayKey(),
-          exercises: toDbExercisePayload(exercises),
-        }),
-      });
+    window.localStorage.removeItem(storageKey);
+  }, [exercises]);
+
+  useEffect(() => {
+    if (!userId || !hasMeaningfulWorkoutDraft(exercises)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void syncWorkoutSession({
+        dateKey: todayKey(),
+        exercises: toDbExercisePayload(exercises),
+      }).catch(() => undefined);
     }, 400);
 
     return () => window.clearTimeout(timer);
-  }, [exercises, hydratedFromDb, userId]);
+  }, [exercises, syncWorkoutSession, userId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !userId) {
@@ -261,9 +268,7 @@ export function WorkoutTrackerManager() {
       try {
         const parsed = JSON.parse(saved) as StoredWorkoutState;
         const normalized = normalizeIncomingExercises(parsed.exercises);
-        if (parsed.dateKey === todayKey() && normalized.length > 0) {
-          setExercises(normalized);
-          setHydratedFromDb(true);
+        if (parsed.dateKey === todayKey() && hasMeaningfulWorkoutDraft(normalized)) {
           return;
         }
       } catch {
@@ -281,7 +286,6 @@ export function WorkoutTrackerManager() {
       if (sessionRes.ok && sessionExercises.length > 0) {
         setExercises(sessionExercises);
         setStatusMessage("Loaded today's workout from database.");
-        setHydratedFromDb(true);
         return;
       }
 
@@ -299,7 +303,6 @@ export function WorkoutTrackerManager() {
       const match = (json?.data ?? []).find((d: { dateKey?: string }) => d?.dateKey === todayKey());
       const list: string[] = Array.isArray(match?.exercises) ? match.exercises : [];
       if (list.length === 0) {
-        setHydratedFromDb(true);
         return;
       }
 
@@ -311,7 +314,6 @@ export function WorkoutTrackerManager() {
         })),
       );
       setStatusMessage("Loaded today's exercises from your calendar.");
-      setHydratedFromDb(true);
     }
 
     void loadFromCalendar();
@@ -356,16 +358,7 @@ export function WorkoutTrackerManager() {
   );
 
   const canSaveWorkout = useMemo(
-    () =>
-      exercises.some((exercise) =>
-        exercise.sets.some(
-          (set) =>
-            toPositiveNumber(set.weight) > 0 ||
-            toPositiveNumber(set.reps) > 0 ||
-            set.isPR ||
-            set.isCompleted,
-        ),
-      ),
+    () => hasMeaningfulWorkoutDraft(exercises),
     [exercises],
   );
 
@@ -385,7 +378,7 @@ export function WorkoutTrackerManager() {
       .filter((exercise) => sanitizeText(exercise.name).length > 0);
   }
 
-  function handleSaveWorkout() {
+  async function handleSaveWorkout() {
     if (!canSaveWorkout) {
       setStatusMessage("Add at least one set before saving your workout.");
       return;
@@ -399,6 +392,22 @@ export function WorkoutTrackerManager() {
 
     if (!result.ok) {
       setStatusMessage(result.message);
+      return;
+    }
+
+    if (!userId) {
+      setStatusMessage(`${result.message} Log in to sync your streak.`);
+      return;
+    }
+
+    try {
+      await syncWorkoutSession({
+        dateKey: todayKey(),
+        exercises: toDbExercisePayload(exercises),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to sync workout.";
+      setStatusMessage(`Workout saved, but streak did not update. ${message}`);
       return;
     }
 

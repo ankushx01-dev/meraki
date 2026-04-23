@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AreaTrendChart,
@@ -28,18 +28,10 @@ export default function ProgressPage() {
     exerciseOptions,
     getWeightProgressData,
   } = useWorkoutHistory();
-  const [selectedExercise, setSelectedExercise] = useState("");
-
-  useEffect(() => {
-    if (exerciseOptions.length === 0) {
-      setSelectedExercise("");
-      return;
-    }
-
-    if (!selectedExercise || !exerciseOptions.includes(selectedExercise)) {
-      setSelectedExercise(exerciseOptions[0]);
-    }
-  }, [exerciseOptions, selectedExercise]);
+  const [selectedExercisePreference, setSelectedExercisePreference] = useState("");
+  const selectedExercise = exerciseOptions.includes(selectedExercisePreference)
+    ? selectedExercisePreference
+    : exerciseOptions[0] ?? "";
 
   const weightProgressData = useMemo(
     () =>
@@ -96,7 +88,7 @@ export default function ProgressPage() {
             {activity.currentStreak}
           </p>
           <p className="mt-1 text-sm text-[#7f8c83]">
-            {activity.currentStreak === 1 ? "day active" : "days active"}
+            {activity.currentStreak === 1 ? "day in a row" : "days in a row"}
           </p>
         </Panel>
 
@@ -142,9 +134,9 @@ export default function ProgressPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="font-semibold text-white">Weekly completion</h2>
-            <p className="mt-1 text-sm text-[#8fb4ff]">
-              Calendar check-offs still feed your streak and weekly momentum.
-            </p>
+          <p className="mt-1 text-sm text-[#8fb4ff]">
+            Calendar check-offs now update your saved workout streak and weekly momentum.
+          </p>
           </div>
           <div className="rounded-full bg-[#2a1214] px-4 py-2 text-sm font-semibold text-[#ff9a9b] ring-1 ring-[#ef4444]/20">
             You completed {weeklyConsistencyLabel} this week
@@ -176,7 +168,7 @@ export default function ProgressPage() {
               </div>
               <p className="mt-2 text-xs text-[#8fb4ff]">{day.dateLabel}</p>
               <p className="mt-4 text-sm font-semibold">
-                {day.completed ? "Workout done" : day.active ? "AI check-in" : "Missed"}
+                {day.completed ? "Workout done" : "Missed"}
               </p>
             </div>
           ))}
@@ -215,7 +207,7 @@ export default function ProgressPage() {
           </div>
           <select
             value={selectedExercise}
-            onChange={(event) => setSelectedExercise(event.target.value)}
+            onChange={(event) => setSelectedExercisePreference(event.target.value)}
             className="h-11 rounded-xl bg-[#0f1511] px-3 text-sm text-white outline-none ring-1 ring-white/8 focus:ring-[#22c55e]/60"
           >
             {exerciseOptions.length === 0 ? (

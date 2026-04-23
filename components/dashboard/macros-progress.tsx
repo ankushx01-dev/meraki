@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Panel } from "@/components/dashboard/ui";
 import { CircularProgress } from "@/components/dashboard/circular-progress";
 import { CaloriesRing } from "@/components/dashboard/calories-ring";
+import { useFitnessActivity } from "@/lib/fitness-activity";
 
 type CalorieDoc = {
   calories?: number;
@@ -21,6 +22,7 @@ export function MacrosProgress() {
     fat: 0,
   });
   const [error, setError] = useState("");
+  const activity = useFitnessActivity();
 
   const userId = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -128,7 +130,7 @@ export function MacrosProgress() {
             remaining={Math.max(0, remaining.calories)}
             goal={targets.calories}
             food={consumed.calories}
-            exercise={0}
+            streak={activity.currentStreak}
           />
 
           {/* 🔥 MACROS */}

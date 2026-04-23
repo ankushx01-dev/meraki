@@ -25,6 +25,7 @@ export type SavedWorkoutCalendarDay = {
   focus?: string;
   summary?: string;
   exercises?: string[];
+  completed?: boolean;
 };
 
 export type WorkoutDayDraft = {
@@ -93,6 +94,22 @@ export function workoutDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+export function parseWorkoutDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function getWorkoutTypeForDate(date: Date) {
+  const weekStart = startOfWorkoutWeek(date);
+  const dayOffset = Math.round(
+    (parseWorkoutDateKey(workoutDateKey(date)).getTime() - weekStart.getTime()) /
+      (24 * 60 * 60 * 1000),
+  );
+  const normalizedIndex =
+    ((dayOffset % workoutSplit.length) + workoutSplit.length) % workoutSplit.length;
+  return workoutSplit[normalizedIndex];
+}
+
 export function getWorkoutTemplate(workout: string): WorkoutTemplate {
   if (workout in workoutDetails) {
     return workoutDetails[workout as WorkoutType];
@@ -105,33 +122,55 @@ export function getWorkoutTemplate(workout: string): WorkoutTemplate {
   };
 }
 
-export function buildWeeklyWorkoutSchedule(referenceDate: Date) {
-  const today = new Date(referenceDate);
-  const weekStart = startOfWorkoutWeek(today);
-  const todayKey = workoutDateKey(today);
+export function createWorkoutScheduleDay(date: Date): WorkoutScheduleDay {
+  const normalizedDate = parseWorkoutDateKey(workoutDateKey(date));
+  const workout = getWorkoutTypeForDate(normalizedDate);
+  const template = getWorkoutTemplate(workout);
+  const key = workoutDateKey(normalizedDate);
+  const todayKey = workoutDateKey(new Date());
 
-  return Array.from({ length: 7 }).map((_, index) => {
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + index);
+  return {
+    key,
+    dayLabel: normalizedDate.toLocaleDateString("en-US", { weekday: "short" }),
+    dateLabel: normalizedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    workout,
+    isToday: key === todayKey,
+    focus: template.focus,
+    summary: template.summary,
+    exercises: template.exercises,
+  };
+}
 
-    const workout = workoutSplit[index % workoutSplit.length];
-    const template = getWorkoutTemplate(workout);
-    const key = workoutDateKey(date);
+export function buildWorkoutSchedule(startDate: Date, count: number) {
+  const normalizedStart = parseWorkoutDateKey(workoutDateKey(startDate));
 
-    return {
-      key,
-      dayLabel: date.toLocaleDateString("en-US", { weekday: "short" }),
-      dateLabel: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      workout,
-      isToday: key === todayKey,
-      focus: template.focus,
-      summary: template.summary,
-      exercises: template.exercises,
-    };
+  return Array.from({ length: count }).map((_, index) => {
+    const date = new Date(normalizedStart);
+    date.setDate(normalizedStart.getDate() + index);
+    return createWorkoutScheduleDay(date);
   });
+}
+
+export function getWorkoutDayDefaults(dateKey: string) {
+  const day = createWorkoutScheduleDay(parseWorkoutDateKey(dateKey));
+
+  return {
+    workout: day.workout,
+    focus: day.focus,
+    summary: day.summary,
+    exercises: day.exercises,
+  };
+}
+
+export function buildWorkoutScheduleDayFromKey(dateKey: string) {
+  return createWorkoutScheduleDay(parseWorkoutDateKey(dateKey));
+}
+
+export function buildWeeklyWorkoutSchedule(referenceDate: Date) {
+  return buildWorkoutSchedule(startOfWorkoutWeek(referenceDate), 7);
 }
 
 export function mergeWorkoutCalendarDays(

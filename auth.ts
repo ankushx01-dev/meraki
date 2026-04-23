@@ -12,6 +12,10 @@ class InvalidCredentialsError extends CredentialsSignin {
   code = "invalid_credentials";
 }
 
+class UserNotFoundError extends CredentialsSignin {
+  code = "user_not_found";
+}
+
 class LoginRateLimitError extends CredentialsSignin {
   code = "rate_limited";
 }
@@ -45,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await connectDB();
         const user = await User.findOne({ email }).lean();
         if (!user?.password) {
-          throw new InvalidCredentialsError();
+          throw new UserNotFoundError();
         }
 
         const isPasswordValid = await bcrypt.compare(

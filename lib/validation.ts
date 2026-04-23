@@ -145,6 +145,7 @@ export const workoutCalendarSaveSchema = z.object({
   workout: textField("Workout", 80),
   focus: optionalTextField(180),
   summary: optionalTextField(280),
+  completed: z.boolean().optional(),
   exercises: z
     .array(textField("Exercise", 80))
     .min(1, "Add at least one exercise.")

@@ -6,12 +6,12 @@ export function CaloriesRing({
   remaining,
   goal,
   food = 0,
-  exercise = 0,
+  streak = 0,
 }: {
   remaining: number;
   goal: number;
   food?: number;
-  exercise?: number;
+  streak?: number;
 }) {
   const size = 210;
   const stroke = 16;
@@ -26,7 +26,7 @@ export function CaloriesRing({
         <div>
           <h2 className="text-xl font-semibold text-white">Today</h2>
           <p className="mt-1 text-sm text-[#8fb4ff]">
-            Remaining = Goal − Food + Exercise
+            Remaining = Goal − Food
           </p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export function CaloriesRing({
         <div className="grid gap-4">
           <StatRow label="Base Goal" value={goal} icon="flag" />
           <StatRow label="Food" value={food} icon="fork" />
-          <StatRow label="Exercise" value={exercise} icon="flame" />
+          <StatRow label="Streak" value={streak} icon="flame" />
         </div>
       </div>
     </Panel>
@@ -108,4 +108,3 @@ function StatRow({
     </div>
   );
 }
-

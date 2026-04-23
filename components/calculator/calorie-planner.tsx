@@ -95,17 +95,29 @@ function InputField({
 }
 
 export function CaloriePlanner() {
-  const [form, setForm] = useState<CalculatorState>(loadCalculatorState);
+  const [form, setForm] = useState<CalculatorState>(initialState);
   const [error, setError] = useState("");
   const [saveStatus, setSaveStatus] = useState<"" | "saving" | "saved" | "error">("");
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const timer = window.setTimeout(() => {
+      setForm(loadCalculatorState());
+      setHasHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasHydrated) {
       return;
     }
 
     window.localStorage.setItem(storageKey, JSON.stringify(form));
-  }, [form]);
+  }, [form, hasHydrated]);
 
   function updateField<K extends keyof CalculatorState>(
     key: K,
@@ -200,10 +212,10 @@ export function CaloriePlanner() {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
     if (!res.ok) {
       setSaveStatus("error");
-      setError((data as any)?.message ?? "Error saving ❌");
+      setError(data.message ?? "Error saving ❌");
       return;
     }
 

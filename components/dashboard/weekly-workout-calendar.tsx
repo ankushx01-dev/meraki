@@ -5,11 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CalendarIcon, CheckCircleIcon, SaveIcon } from "@/components/dashboard/icons";
 import { Panel, cx } from "@/components/dashboard/ui";
-import {
-  getActivityDayLabel,
-  toggleCompletedDay,
-  useFitnessActivity,
-} from "@/lib/fitness-activity";
+import { getActivityDayLabel, useStreak } from "@/lib/fitness-activity";
 import {
   buildWeeklyWorkoutSchedule,
   createWorkoutDayDraft,
@@ -39,7 +35,8 @@ export function WeeklyWorkoutCalendar({ editable = true }: { editable?: boolean 
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [completionMsg, setCompletionMsg] = useState("");
-  const activity = useFitnessActivity();
+  const [completionSavingKey, setCompletionSavingKey] = useState("");
+  const { completedDates, toggleDayCompletion } = useStreak();
 
   const userId =
     typeof window !== "undefined" ? window.localStorage.getItem("meraki_auth") || "" : "";
@@ -90,10 +87,7 @@ export function WeeklyWorkoutCalendar({ editable = true }: { editable?: boolean 
     () => getSelectedWorkoutDay(schedule, selectedKey),
     [schedule, selectedKey],
   );
-  const completedSet = useMemo(
-    () => new Set(activity.completedDates),
-    [activity.completedDates],
-  );
+  const completedSet = useMemo(() => new Set(completedDates), [completedDates]);
 
   const baseDraft = selectedDay ? createWorkoutDayDraft(selectedDay) : null;
   const selectedDraft =
@@ -147,13 +141,35 @@ export function WeeklyWorkoutCalendar({ editable = true }: { editable?: boolean 
     }));
   }
 
-  function handleToggleCompletion(dateKey: string) {
-    const completed = toggleCompletedDay(dateKey);
-    setCompletionMsg(
-      completed
-        ? `${getActivityDayLabel(dateKey)} marked complete.`
-        : `${getActivityDayLabel(dateKey)} removed from completed days.`,
-    );
+  async function handleToggleCompletion(day: WorkoutScheduleDay) {
+    if (!userId) {
+      setCompletionMsg("Log in to update your streak.");
+      return;
+    }
+
+    setCompletionSavingKey(day.key);
+    setCompletionMsg("");
+
+    try {
+      const nextCompleted = await toggleDayCompletion({
+        dateKey: day.key,
+        workout: day.workout,
+        focus: day.focus,
+        summary: day.summary,
+        exercises: day.exercises,
+      });
+      setCompletionMsg(
+        nextCompleted
+          ? `${getActivityDayLabel(day.key)} marked complete.`
+          : `${getActivityDayLabel(day.key)} removed from your streak.`,
+      );
+    } catch (error) {
+      setCompletionMsg(
+        error instanceof Error ? error.message : "Failed to update streak.",
+      );
+    } finally {
+      setCompletionSavingKey("");
+    }
   }
 
   async function saveDay() {
@@ -290,24 +306,30 @@ export function WeeklyWorkoutCalendar({ editable = true }: { editable?: boolean 
                       Today
                     </span>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleToggleCompletion(day.key);
-                    }}
-                    className={cx(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] transition",
-                      isCompleted
-                        ? "bg-red-500 text-white shadow-[0_12px_24px_rgba(239,68,68,0.2)]"
-                        : "bg-white/[0.06] text-white/70 hover:bg-red-500/14 hover:text-white",
-                    )}
-                  >
-                    <CheckCircleIcon className="h-3.5 w-3.5" />
-                    {isCompleted ? "Done" : "Mark"}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleToggleCompletion(day);
+                      }}
+                      disabled={completionSavingKey === day.key}
+                      className={cx(
+                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] transition",
+                        isCompleted
+                          ? "bg-red-500 text-white shadow-[0_12px_24px_rgba(239,68,68,0.2)]"
+                          : "bg-white/[0.06] text-white/70 hover:bg-red-500/14 hover:text-white",
+                        completionSavingKey === day.key && "cursor-not-allowed opacity-60",
+                      )}
+                    >
+                      <CheckCircleIcon className="h-3.5 w-3.5" />
+                      {completionSavingKey === day.key
+                        ? "Saving"
+                        : isCompleted
+                          ? "Done"
+                          : "Mark"}
+                    </button>
+                  </div>
                 </div>
-              </div>
             </div>
           );
         })}
@@ -327,16 +349,24 @@ export function WeeklyWorkoutCalendar({ editable = true }: { editable?: boolean 
             <div className="flex flex-col items-start gap-3 lg:items-end">
               <button
                 type="button"
-                onClick={() => handleToggleCompletion(previewDay.key)}
+                onClick={() => {
+                  void handleToggleCompletion(previewDay);
+                }}
+                disabled={completionSavingKey === previewDay.key}
                 className={cx(
                   "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition",
                   completedSet.has(previewDay.key)
                     ? "bg-red-500 text-white shadow-[0_14px_30px_rgba(239,68,68,0.22)]"
                     : "bg-white/[0.06] text-white/80 ring-1 ring-white/10 hover:bg-red-500/14 hover:text-white",
+                  completionSavingKey === previewDay.key && "cursor-not-allowed opacity-60",
                 )}
               >
                 <CheckCircleIcon className="h-4 w-4" />
-                {completedSet.has(previewDay.key) ? "Completed" : "Mark as completed"}
+                {completionSavingKey === previewDay.key
+                  ? "Saving..."
+                  : completedSet.has(previewDay.key)
+                    ? "Completed"
+                    : "Mark as completed"}
               </button>
               <p className="max-w-lg text-sm leading-7 text-[#8f8e8c]">{previewDay.focus}</p>
             </div>

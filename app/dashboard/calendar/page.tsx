@@ -3,9 +3,8 @@ import { WeeklyWorkoutCalendar } from "@/components/dashboard/weekly-workout-cal
 import { PageIntro } from "@/components/dashboard/ui";
 
 export const metadata: Metadata = {
-  title: "Workout Calendar ",
-  description:
-    "Plan your week in Meraki with an automatically generated workout split calendar.",
+  title: "Weekly Workout Calendar",
+  description: "Track this week's workout streak and manage your weekly training plan in Meraki.",
 };
 
 export default function CalendarPage() {
@@ -13,7 +12,7 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <PageIntro
         title="Weekly Workout Calendar"
-        description="Your Monday-to-Sunday training split updates automatically, and completed days sync into streaks and progress in real time."
+        description="Your current 7-day streak and weekly plan in one place."
       />
 
       <WeeklyWorkoutCalendar />

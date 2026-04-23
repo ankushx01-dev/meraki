@@ -194,7 +194,7 @@ export function DashboardAppShell({ children }: { children: ReactNode }) {
                     {activity.currentStreak}
                   </p>
                   <p className="mt-1 text-sm text-[#9db0a4]">
-                    {activity.currentStreak === 1 ? "day active" : "days active"}
+                    {activity.currentStreak === 1 ? "day in a row" : "days in a row"}
                   </p>
                 </div>
                 <div className="mt-4 grid grid-cols-7 gap-1.5">
@@ -219,9 +219,6 @@ export function DashboardAppShell({ children }: { children: ReactNode }) {
                   </p>
                   <p className="mt-2 text-sm text-white">
                     {activity.weeklyCompletedCount}/7 workouts completed
-                  </p>
-                  <p className="mt-1 text-xs text-[#9db0a4]">
-                    AI check-ins and completed workouts both keep the streak alive.
                   </p>
                 </div>
               </div>
