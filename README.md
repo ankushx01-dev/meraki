@@ -165,10 +165,10 @@ All endpoints follow structured validation and response handling.
   <img src="./public/preview-ai.png" width="850" />
 </p>
 
-### Workout Calendar
+### Plans
 
 <p align="center">
-  <img src="./public/preview-calendar.png" width="850" />
+  <img src="./public/preview-plans.png" width="850" />
 </p>
 
 ---
