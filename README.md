@@ -240,8 +240,8 @@ If you are interested in collaborating, you are free to reach out.
 
 Ankush Rana
 
-GitHub
-https://github.com/ankushx01-dev
+Email
+rajputx000@gmail.com
 
 LinkedIn
 https://www.linkedin.com/in/ankush-rana-x01
