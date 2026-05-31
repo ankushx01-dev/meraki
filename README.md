@@ -202,17 +202,8 @@ Sensitive values must never be committed.
 
 * Hosted on Vercel
 * Automatic deployment via GitHub
-* Requires environment variables
-
----
-
-## Performance Considerations
-
-* Controlled component re-renders
-* Efficient date handling for streak logic
-* Minimal client-side state
-* Server-side aggregation
-
+* Requires environment
+* 
 ---
 
 ## Roadmap
